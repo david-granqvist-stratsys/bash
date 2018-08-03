@@ -3,6 +3,8 @@
 # add kvp's to etcd cluster from csv file
 # Author: David Granqvist, Stratsys AB
 # Last updated: 2018-08-03  
+# 
+# (CSV file needs to be on the form [key,value]\n(LF) )
 
 ##################################################
 # Iterate over csv file and update etcd cluster with kvp's from file
@@ -23,16 +25,16 @@ function add_etcd_keys(){
     etcd_password=$4
     prefix=$5
 
-    # printf "\nargument #1 is : $etcd_address\n"
-    # printf "argument #2 is : $csv_file_path\n"
-    # printf "argument #3 is : $etcd_username\n"
-    # printf "argument #4 is : $etcd_password\n"
-    # printf "argument #5 is : $prefix\n"
+    # printf $"\nargument #1 is : $etcd_address\n"
+    # printf $"argument #2 is : $csv_file_path\n"
+    # printf $"argument #3 is : $etcd_username\n"
+    # printf $"argument #4 is : $etcd_password\n"
+    # printf $"argument #5 is : $prefix\n"
 
-    printf "\nGenerating access token ...\n"
+    printf $"\nGenerating access token ...\n"
     etcd_token=$(get_auth_token $etcd_address $etcd_username $etcd_password)
     read_and_put_kvps_from_csv $csv_file_path $etcd_token $prefix
-    printf "\nDone!"
+    printf $"\nDone!"
    }
 
 ##################################################
@@ -77,9 +79,9 @@ function read_and_put_kvps_from_csv(){
 
   cat "${csv_file_path}.txt" | while read line
     do
-      printf "\n"
-      key=$(echo $line | cut -d ',' -f1)
-      value=$(echo $line | cut -d ',' -f2)
+      printf $"\n"
+      key=$(echo $line | cut -d ',' -f1 | tr -d '\n')
+      value=$(echo $line | cut -d ',' -f2 | tr -d '\n')
       put_kvp $key $value $etcd_token $prefix
     done
 }
@@ -102,14 +104,14 @@ function put_kvp(){
   etcd_token=$3
   prefix=$4
 
-  key_with_prefix_encoded=$(echo "${prefix}/${key}" | base64)
-  value_encoded=$(echo "${value}" | base64)
+  key_with_prefix_encoded=$(echo "${prefix}/${key}" | base64 | tr -d '\n')
+  value_encoded=$(echo "${value}" | base64 | tr -d '\n')
 
-  printf "pushing kvp: key=\"${prefix}/${key}\", value=\"${value}\"\n"
+  printf $"pushing kvp: key=\"${prefix}/${key}\", value=\"${value}\"\n"
 
   # put value in etcd cluster
-  echo curl -X POST -L "http://${etcd_address}/v3/kv/put "  -H "'Authorization : ${etcd_token}' " -d "'{\"key\": \"${key_with_prefix_encoded}\", \"value\": \"${value_encoded}\"}'" | bash > /dev/null
-  
+  echo curl -X POST -L "http://${etcd_address}/v3/kv/put" -H "'Authorization : ${etcd_token}'" -d "'{\"key\": \"${key_with_prefix_encoded}\", \"value\": \"${value_encoded}\"}'" | bash > /dev/null
+
   # get value from key
   # echo curl -X POST -L "http://${etcd_address}/v3/kv/range " -H "'Authorization : ${etcd_token}' " -d "'{\"key\":  \"${key_with_prefix_encoded}\"}'" |
   # bash |
@@ -119,8 +121,8 @@ function put_kvp(){
 }
 
 function usage() {
-  printf "Usage: add_etcd_keys [ options ... ] <etcdAddress> <PathToCsvFile> <etcdUsername> <etcdPassword> <prefix> \n"
-  printf "All arguments are required!\n"
+  printf $"Usage: add_etcd_keys [ options ... ] <etcdAddress> <PathToCsvFile> <etcdUsername> <etcdPassword> <prefix> \n"
+  printf $"All arguments are required!\n"
   exit 2
 } 2>/dev/null
 
@@ -134,9 +136,9 @@ function main(){
 
   if [[ ( -z "$1" ) || ( -z "$2" ) || ( -z "$3" ) || ( -z "$4") || ( -z "$5" ) ]]
   then 
-    printf " **** No arguments are allowed to be empty!! ****\n"
+    printf $" **** No arguments are allowed to be empty!! ****\n"
     usage
-    exit "Nope"
+    exit $"Nope"
   else 
     add_etcd_keys "${@:1:5}"
   fi
